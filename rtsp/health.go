@@ -24,6 +24,23 @@ type HealthResult struct {
 	Error    string // human readable, empty if healthy
 }
 
+func parseTrackURL(baseURL, sdpBody string) string {
+    for _, line := range strings.Split(sdpBody, "\n") {
+        line = strings.TrimSpace(line)
+        if strings.HasPrefix(line, "a=control:") {
+            track := strings.TrimPrefix(line, "a=control:")
+            // if it's already a full URL, use it directly
+            if strings.HasPrefix(track, "rtsp://") {
+                return track
+            }
+            // otherwise append to base URL
+            return strings.TrimRight(baseURL, "/") + "/" + track
+        }
+    }
+    // fallback
+    return baseURL + "/trackID=0"
+}
+
 func offlineResult(id int, start time.Time, err error) HealthResult {
 	return HealthResult{
 		CameraID: id,
@@ -95,7 +112,7 @@ func HealthCheck(ctx context.Context, cameraID int, rtspURL string, timeout time
 			return unhealthyResult(cameraID, start, fmt.Errorf("failed to parse auth challenge: %v", err))
 		}
 
-		authHeaderValue = BuildAuthorisation(authChallenge, username, password, "OPTIONS", rtspURL)
+		authHeaderValue = BuildAuthorisation(authChallenge, "OPTIONS", rtspURL, username, password)
 		resp, err = conn.Send("OPTIONS", rtspURL, map[string]string{"Authorization": authHeaderValue})
 		if err != nil {
 			return offlineResult(cameraID, start, fmt.Errorf("authenticated OPTIONS failed: %v", err))
@@ -124,11 +141,12 @@ func HealthCheck(ctx context.Context, cameraID int, rtspURL string, timeout time
 		return unhealthyResult(cameraID, start, fmt.Errorf("empty body in DESCRIBE response"))
 	}
 
+	trackURL := parseTrackURL(rtspURL, resp.Body)
 	// 7. Send SETUP
 	//    needs Transport header:
 	//    "RTP/AVP/TCP;unicast;interleaved=0-1"
 	//    parse Session header from response for next step
-	resp, err = conn.Send("SETUP", rtspURL+"/trackID=0", map[string]string{
+	resp, err = conn.Send("SETUP", trackURL, map[string]string{
 		"Transport":     "RTP/AVP/TCP;unicast;interleaved=0-1",
 		"Authorization": authHeaderValue,
 	})
