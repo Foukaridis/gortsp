@@ -32,7 +32,7 @@ import (
     "fmt"
     "time"
 
-    "github.com/yourname/rtsp"
+    "github.com/Foukaridis/gortsp"
 )
 
 func main() {
