@@ -11,10 +11,10 @@ import (
 type HealthStatus string
 
 const (
-	StatusHealthy         HealthStatus = "HEALTHY"
-	StatusUnauthenticated HealthStatus = "UNAUTHENTICATED"
-	StatusUnhealthy       HealthStatus = "UNHEALTHY"
-	StatusOffline         HealthStatus = "OFFLINE"
+	Healthy         HealthStatus = "HEALTHY"
+	Unauthenticated HealthStatus = "UNAUTHENTICATED"
+	Unhealthy       HealthStatus = "UNHEALTHY"
+	Offline         HealthStatus = "OFFLINE"
 )
 
 type HealthResult struct {
@@ -27,7 +27,7 @@ type HealthResult struct {
 func offlineResult(id int, start time.Time, err error) HealthResult {
 	return HealthResult{
 		CameraID: id,
-		Status:   StatusOffline,
+		Status:   Offline,
 		Latency:  time.Since(start),
 		Error:    err.Error(),
 	}
@@ -36,7 +36,7 @@ func offlineResult(id int, start time.Time, err error) HealthResult {
 func unhealthyResult(id int, start time.Time, err error) HealthResult {
 	return HealthResult{
 		CameraID: id,
-		Status:   StatusUnhealthy,
+		Status:   Unhealthy,
 		Latency:  time.Since(start),
 		Error:    err.Error(),
 	}
@@ -45,7 +45,7 @@ func unhealthyResult(id int, start time.Time, err error) HealthResult {
 func unauthenticatedResult(id int, start time.Time) HealthResult {
 	return HealthResult{
 		CameraID: id,
-		Status:   StatusUnauthenticated,
+		Status:   Unauthenticated,
 		Latency:  time.Since(start),
 		Error:    "invalid credentials",
 	}
@@ -158,7 +158,7 @@ func HealthCheck(ctx context.Context, cameraID int, rtspURL string, timeout time
 	conn.Send("TEARDOWN", rtspURL, map[string]string{"Session": session, "Authorization": authHeaderValue})
 	return HealthResult{
 		CameraID: cameraID,
-		Status:   StatusHealthy,
+		Status:   Healthy,
 		Latency:  time.Since(start),
 	}
 }
